@@ -2,10 +2,11 @@ name := "patnmgen"
 version := "0.1"
 scalaVersion := "2.12.8"
 
-mainClass in assembly := None
+mainClass in assembly := Some("Patnmgen")
 assemblyJarName in assembly := "patnmgen.jar"
 test in assembly := {}
 
 libraryDependencies ++= Seq(
+  "com.github.scopt" %% "scopt" % "4.0.0-RC2",
   "net.sf.extjwnl" % "extjwnl" % "2.0.0"
 )
