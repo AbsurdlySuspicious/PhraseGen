@@ -6,6 +6,10 @@ case class Opts(
     countSyn: Int = 3
 )
 
+class Test extends App {
+
+}
+
 class Patnmgen extends App {
 
   val dop = Opts()
