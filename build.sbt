@@ -2,7 +2,7 @@ name := "patnmgen"
 version := "0.1"
 scalaVersion := "2.12.8"
 
-mainClass in assembly := Some("Patnmgen")
+mainClass in assembly := Some("patnmgen.Patnmgen")
 assemblyJarName in assembly := "patnmgen.jar"
 test in assembly := {}
 

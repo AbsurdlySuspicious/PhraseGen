@@ -1,3 +1,5 @@
+package patnmgen
+
 import scopt.OParser
 
 case class Opts(

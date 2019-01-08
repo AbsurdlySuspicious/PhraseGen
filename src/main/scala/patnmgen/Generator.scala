@@ -1,3 +1,5 @@
+package patnmgen
+
 import net.sf.extjwnl.data.POS
 import net.sf.extjwnl.dictionary.Dictionary
 

@@ -1,4 +1,4 @@
-import java.nio.CharBuffer
+package patnmgen
 
 import scala.collection.mutable
 
