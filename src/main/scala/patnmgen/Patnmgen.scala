@@ -1,8 +1,6 @@
 package patnmgen
 
 import scopt.OParser
-
-import scala.util.Random
 import Utils._
 
 import scala.io.StdIn

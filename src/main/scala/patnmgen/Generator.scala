@@ -10,19 +10,6 @@ import scala.util.Random
 import scala.util.matching.Regex
 
 object PS {
-  val fs: PartialFunction[String, PS] = {
-    case "noun"              => Noun
-    case "verb"              => Verb
-    case "adverb"            => Adverb
-    case "adj" | "adjective" => Adj
-  }
-
-  private val fsl = fs.lift
-
-  def fromString(s: String): Option[PS] = fsl(s)
-
-  def fromStringT(s: String): TraversableOnce[PS] = fromString(s)
-
   def fromOrig(ps: POS): PS = ps match {
     case POS.ADJECTIVE => Adj
     case POS.ADVERB    => Adverb
@@ -41,13 +28,13 @@ case object Adj extends PS(POS.ADJECTIVE)
 
 sealed trait WordMode
 
-case object Full extends WordMode
 case class WithSep(sep: String) extends WordMode
+case object Full extends WordMode
 case object RandomWord extends WordMode
 case object FirstWord extends WordMode
 case object LastWord extends WordMode
 
-case class GeneratorToken(ps: PS, wm: WordMode)
+case class GeneratorToken(ps: PS, wm: WordMode, searchQuery: Option[String])
 case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
   def patStr(t: List[String]): String = makePatternStrList(p, t)
 }
@@ -59,8 +46,13 @@ class Generator(dictPath: String) {
   val dict = Dictionary.getFileBackedInstance(dictPath)
 
   val bounds = ("[", "]")
+
   val sepPref = "sep"
   val sepRe = new Regex(sepPref + """\((.*)\)""")
+
+  val posRePOS = "pos"
+  val posReParam = "param"
+  val posRe = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
 
   def rand(max: Int) = rnd.nextInt(max)
 
@@ -94,19 +86,35 @@ class Generator(dictPath: String) {
             case x => ex(s"invalid token: ${x.mkString(" ")}")
           }
 
-          val ps = PS.fromString(psS).getOrElse(ex(s"invalid ps: $psS"))
-          GeneratorToken(ps, wm)
+          val posMatch = posRe.findFirstMatchIn(psS)
+          val (posName, posParam) = posMatch match {
+            case Some(m) => m.group(posRePOS) -> Some(m.group(posReParam))
+            case None    => (psS, None)
+          }
+
+          val ps = posName match {
+            case "noun"              => Noun
+            case "verb"              => Verb
+            case "adverb"            => Adverb
+            case "adj" | "adjective" => Adj
+            case x                   => ex(s"invalid ps: $x")
+          }
+
+          GeneratorToken(ps, wm, posParam)
       }
 
     GeneratorPattern(p, tokens)
   }
 
-  def randomIdxWord(pos: PS) =
-    dict.getRandomIndexWord(pos.orig)
-
   def getIdxWordsForPattern(
       p: GeneratorPattern): List[(GeneratorToken, IndexWord)] =
-    p.tokens.map(t => t -> randomIdxWord(t.ps))
+    p.tokens.map { t =>
+      val word = t.searchQuery match {
+        case Some(q) => dict.lookupIndexWord(t.ps.orig, q)
+        case None    => dict.getRandomIndexWord(t.ps.orig)
+      }
+      (t, word)
+    }
 
   def synSelector(w: IndexWord, wm: WordMode): String = {
     val senses = w.getSenses.asScala
