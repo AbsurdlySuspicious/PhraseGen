@@ -1,7 +1,6 @@
 package patnmgen
 
-import net.sf.extjwnl.data.relationship.{RelationshipFinder, RelationshipList}
-import net.sf.extjwnl.data.{IndexWord, POS, PointerType}
+import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
 
 import scala.collection.JavaConverters._
@@ -136,8 +135,7 @@ class Generator(dictPath: String) {
     }
   }
 
-  def randomForPattern(pat: GeneratorPattern,
-                       synCount: Int): (List[IndexWord], List[String]) = {
+  def randomForPattern(pat: GeneratorPattern, synCount: Int): (List[IndexWord], List[String]) = {
     val newTk = getIdxWordsForPattern(pat)
 
     val res = for (_ <- 1 to synCount) yield {
@@ -147,22 +145,5 @@ class Generator(dictPath: String) {
 
     (newTk.map(_._2), res.toList)
   }
-
-}
-
-object RelationshipTests extends App {
-
-  val dict = Dictionary.getFileBackedInstance("local/dict")
-
-  //val rw = dict.getRandomIndexWord(POS.NOUN)
-  val rw = dict.lookupIndexWord(POS.NOUN, "").getSenses.asScala.head
-  println(rw)
-
-  val ss = rw
-    .getTargets(PointerType.ANTONYM)
-    .asScala
-    .head
-    .getSynset
-  println(ss)
 
 }
