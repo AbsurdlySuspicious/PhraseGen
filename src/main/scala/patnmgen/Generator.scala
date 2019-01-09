@@ -135,14 +135,15 @@ class Generator(dictPath: String) {
     }
   }
 
-  def randomForPattern(pat: GeneratorPattern, synCount: Int): List[String] = {
+  def randomForPattern(pat: GeneratorPattern, synCount: Int): (List[IndexWord], List[String]) = {
     val newTk = getIdxWordsForPattern(pat)
+
     val res = for (_ <- 1 to synCount) yield {
       val newRp = for ((t, w) <- newTk) yield synSelector(w, t.wm)
       pat.patStr(newRp)
     }
 
-    res.toList
+    (newTk.map(_._2), res.toList)
   }
 
 }
