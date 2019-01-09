@@ -34,7 +34,15 @@ case object RandomWord extends WordMode
 case object FirstWord extends WordMode
 case object LastWord extends WordMode
 
-case class GeneratorToken(ps: PS, wm: WordMode, searchQuery: Option[String])
+sealed trait PosParam
+
+case class Search(q: String) extends PosParam
+
+case class DictLookup(
+    search: String = ""
+)
+
+case class GeneratorToken(ps: PS, wm: WordMode, params: DictLookup)
 case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
   def patStr(t: List[String]): String = makePatternStrList(p, t)
 }
@@ -54,11 +62,25 @@ class Generator(dictPath: String) {
   val posReParam = "param"
   val posRe = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
 
+  val paramReName = "name"
+  val paramReVal = "value"
+  val paramRe = new Regex("""(.+):\s*(.*)""", paramReName, paramReVal)
+
   def rand(max: Int) = rnd.nextInt(max)
 
   def randElem[T](s: Seq[T]): T = s(rand(s.length))
 
   def ex(msg: String) = throw new GeneratorException(msg)
+
+  def parsePosParam(inp: String): List[PosParam] = {
+    val spl = inp.split(',').toList
+    spl
+      .flatMap(paramRe.findFirstMatchIn)
+      .map(m => m.group(paramReName) -> m.group(paramReVal))
+      .map {
+        case ("s", q) => Search(q)
+      }
+  }
 
   def parsePattern(pat: String): GeneratorPattern = {
     val p = patternParse(pat, bounds)
@@ -100,7 +122,18 @@ class Generator(dictPath: String) {
             case x                   => ex(s"invalid ps: $x")
           }
 
-          GeneratorToken(ps, wm, posParam)
+          val lookup = posParam match {
+            case None => DictLookup()
+            case Some(inp) =>
+              val pl = parsePosParam(inp)
+              var dl = DictLookup()
+              pl foreach {
+                case Search(q) => dl = dl.copy(search = q)
+              }
+              dl
+          }
+
+          GeneratorToken(ps, wm, lookup)
       }
 
     GeneratorPattern(p, tokens)
@@ -109,9 +142,9 @@ class Generator(dictPath: String) {
   def getIdxWordsForPattern(
       p: GeneratorPattern): List[(GeneratorToken, IndexWord)] =
     p.tokens.map { t =>
-      val word = t.searchQuery match {
-        case Some(q) => dict.lookupIndexWord(t.ps.orig, q)
-        case None    => dict.getRandomIndexWord(t.ps.orig)
+      val word = t.params match {
+        case DictLookup("") => dict.getRandomIndexWord(t.ps.orig)
+        case DictLookup(q) => dict.lookupIndexWord(t.ps.orig, q)
       }
       (t, word)
     }
@@ -135,7 +168,8 @@ class Generator(dictPath: String) {
     }
   }
 
-  def randomForPattern(pat: GeneratorPattern, synCount: Int): (List[IndexWord], List[String]) = {
+  def randomForPattern(pat: GeneratorPattern,
+                       synCount: Int): (List[IndexWord], List[String]) = {
     val newTk = getIdxWordsForPattern(pat)
 
     val res = for (_ <- 1 to synCount) yield {

@@ -1,8 +1,10 @@
 package patnmgen
 
 import net.sf.extjwnl.data.IndexWord
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 object Utils {
 
