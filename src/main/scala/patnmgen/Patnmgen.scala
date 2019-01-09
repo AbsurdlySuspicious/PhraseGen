@@ -1,6 +1,8 @@
 package patnmgen
 
 import scopt.OParser
+import scala.util.Random
+import Utils._
 
 case class Opts(
     dict: String = "",
@@ -8,11 +10,23 @@ case class Opts(
     countSyn: Int = 3
 )
 
-class Test extends App {
+object Test extends App {
+  val rnd = new Random
+  def heh = rnd.nextInt(10)
 
+  val pat = patternParse("<A>-<TOP>foo<LEL>bar<B>", ("<", ">"))
+
+  println(pat)
+
+  val mp = pat.tokens.map {
+    case (i, t) => s"<$t$i>"
+  }
+  val str = makePatternList(pat, mp)
+
+  println(str)
 }
 
-class Patnmgen extends App {
+object Patnmgen extends App {
 
   val dop = Opts()
 
