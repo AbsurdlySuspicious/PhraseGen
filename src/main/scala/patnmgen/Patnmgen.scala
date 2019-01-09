@@ -1,8 +1,11 @@
 package patnmgen
 
 import scopt.OParser
+
 import scala.util.Random
 import Utils._
+
+import scala.io.StdIn
 
 case class Opts(
     dict: String = "",
@@ -11,19 +14,12 @@ case class Opts(
 )
 
 object Test extends App {
-  val rnd = new Random
-  def heh = rnd.nextInt(10)
 
-  val pat = patternParse("<A>-<TOP>foo<LEL>bar<B>", ("<", ">"))
+  val g = new Generator("local/dict")
 
-  println(pat)
+  val pat = StdIn.readLine()
+  val gp = g.parsePattern(pat)
 
-  val mp = pat.tokens.map {
-    case (i, t) => s"<$t$i>"
-  }
-  val str = makePatternList(pat, mp)
-
-  println(str)
 }
 
 object Patnmgen extends App {
