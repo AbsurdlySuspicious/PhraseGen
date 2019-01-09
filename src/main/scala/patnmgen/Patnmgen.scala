@@ -8,25 +8,11 @@ import Utils._
 import scala.io.StdIn
 
 case class Opts(
-    dict: String = "",
+    dict: String = "local/dict",
     count: Int = 10,
-    countSyn: Int = 1
+    countSyn: Int = 1,
+    interact: Boolean = false
 )
-
-object Test extends App {
-
-  val g = new Generator("local/dict")
-
-  while (true) {
-    println("enter pattern:")
-    val pat = StdIn.readLine()
-    val gp = g.parsePattern(pat)
-    for (i <- 1 to 5) {
-      val rp = g.randomForPattern(gp, 3)
-      println(s"===== $i =====\n${rp.mkString("\n")}\n")
-    }
-  }
-}
 
 object Patnmgen extends App {
 
@@ -44,9 +30,11 @@ object Patnmgen extends App {
 
     OParser.sequence(
       programName("patnmgen"),
+      opt[Unit]('I', "interactive")
+        .text("Interactive mode (passed patterns will be ignored)")
+        .action((_, o) => o.copy(interact = true)),
       opt[String]('d', "dict")
-        .text("Path to WordNet dictionary file")
-        .required()
+        .text(s"Path to WordNet dictionary file (default ${dop.dict})")
         .action((f, o) => o.copy(dict = f)),
       opt[Int]('c', "count")
         .text(s"Count of names to generate (default ${dop.count})")
@@ -62,7 +50,48 @@ object Patnmgen extends App {
 
   val opts = OParser.parse(optP, args, dop) match {
     case Some(o) => o
-    case None    => esc("Can't parse options")
+    case None    => esc("")
   }
+
+  val g = new Generator(opts.dict)
+
+  def interactive(): Unit = {
+    var count = opts.count
+    var syncount = opts.countSyn
+    while (true) try {
+      println("enter pattern (or :help):")
+      val input = StdIn.readLine()
+
+      input.trim.split(' ').toList match {
+        case ":help" :: Nil =>
+          println("""
+            |Usage: PATTERN or command
+            |
+            |Commands:
+            |:exit - exit interactive mode
+            |:count, :syncount - show or change corresponding counts
+          """.stripMargin)
+        case ":exit" :: Nil          => return
+        case ":count" :: Nil         => println(count)
+        case ":count" :: s :: Nil    => count = s.toInt
+        case ":syncount" :: Nil      => println(syncount)
+        case ":syncount" :: s :: Nil => syncount = s.toInt
+        case _ =>
+          val pat = g.parsePattern(input)
+          println()
+          for (i <- 1 to count) {
+            val rp = g.randomForPattern(pat, syncount)
+            //println(s"===== $i =====\n${rp.mkString("\n")}\n")
+            println(rp.mkString("; "))
+          }
+          println()
+      }
+    } catch {
+      case x: Exception => println("error:\n" + x)
+    }
+  }
+
+  if (opts.interact) interactive()
+  else {}
 
 }
