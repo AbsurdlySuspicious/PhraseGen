@@ -48,7 +48,9 @@ case object FirstWord extends WordMode
 case object LastWord extends WordMode
 
 case class GeneratorToken(ps: PS, wm: WordMode)
-case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken])
+case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
+  def patStr(t: List[String]): String = makePatternStrList(p, t)
+}
 
 class GeneratorException(m: String) extends Exception(m)
 
@@ -56,15 +58,18 @@ class Generator(dictPath: String) {
   val rnd = new Random
   val dict = Dictionary.getFileBackedInstance(dictPath)
 
+  val bounds = ("[", "]")
   val sepPref = "sep"
-  val sepRe = new Regex(s"""$sepPref\[(.*)\]""")
+  val sepRe = new Regex(sepPref + """\((.*)\)""")
 
   def rand(max: Int) = rnd.nextInt(max)
+
+  def randElem[T](s: Seq[T]): T = s(rand(s.length))
 
   def ex(msg: String) = throw new GeneratorException(msg)
 
   def parsePattern(pat: String): GeneratorPattern = {
-    val p = patternParse(pat, ("<", ">"))
+    val p = patternParse(pat, bounds)
     val tokens = p.tokens
       .map {
         case (_, s) =>
@@ -79,7 +84,9 @@ class Generator(dictPath: String) {
                 case "rw"  => RandomWord
                 case sp if sp.startsWith(sepPref) =>
                   val m =
-                    sepRe.findFirstMatchIn(sp).getOrElse(ex("invalid separator wm"))
+                    sepRe
+                      .findFirstMatchIn(sp)
+                      .getOrElse(ex("invalid separator wm"))
                   WithSep(m.group(1))
                 case x => ex(s"invalid wm: $x")
               }
@@ -102,24 +109,32 @@ class Generator(dictPath: String) {
     p.tokens.map(t => t -> randomIdxWord(t.ps))
 
   def synSelector(w: IndexWord, wm: WordMode): String = {
-    val senses = w.getSenses.asScala.toList
-    val syn = senses.head
+    val senses = w.getSenses.asScala
+    val syn = randElem(senses)
     val words = syn.getWords.asScala
-    val word = words(rand(words.length))
+    val word = randElem(words)
     val lemma = word.getLemma
     def split = lemma.split(' ')
 
-    println(word)
+    //println(word)
 
     wm match {
       case Full         => lemma
       case FirstWord    => split.head
       case LastWord     => split.last
       case WithSep(sep) => split.mkString(sep)
-      case RandomWord =>
-        val s = split
-        s(rand(s.length))
+      case RandomWord   => randElem(split)
     }
+  }
+
+  def randomForPattern(pat: GeneratorPattern, synCount: Int): List[String] = {
+    val newTk = getIdxWordsForPattern(pat)
+    val res = for (_ <- 1 to synCount) yield {
+      val newRp = for ((t, w) <- newTk) yield synSelector(w, t.wm)
+      pat.patStr(newRp)
+    }
+
+    res.toList
   }
 
 }

@@ -43,8 +43,8 @@ object Utils {
     ParsedPattern(bt.toList, tk.toList)
   }
 
-  def makePatternList(pattern: ParsedPattern,
-                        replaceTokens: List[String]): String = {
+  def makePatternStrList(pattern: ParsedPattern,
+                         replaceTokens: List[String]): String = {
     val b = new StringBuffer()
     val rp = mutable.ArrayStack(replaceTokens: _*)
     val ar = mutable.ArrayStack(pattern.around: _*)

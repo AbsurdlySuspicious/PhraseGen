@@ -10,16 +10,22 @@ import scala.io.StdIn
 case class Opts(
     dict: String = "",
     count: Int = 10,
-    countSyn: Int = 3
+    countSyn: Int = 1
 )
 
 object Test extends App {
 
   val g = new Generator("local/dict")
 
-  val pat = StdIn.readLine()
-  val gp = g.parsePattern(pat)
-
+  while (true) {
+    println("enter pattern:")
+    val pat = StdIn.readLine()
+    val gp = g.parsePattern(pat)
+    for (i <- 1 to 5) {
+      val rp = g.randomForPattern(gp, 3)
+      println(s"===== $i =====\n${rp.mkString("\n")}\n")
+    }
+  }
 }
 
 object Patnmgen extends App {
