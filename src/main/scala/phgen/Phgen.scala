@@ -57,7 +57,8 @@ object Phgen extends App {
         .text("Interactive mode (passed patterns will be ignored)")
         .action((_, o) => o.copy(interactive = true)),
       opt[String]('d', "dict")
-        .text(s"Path to WordNet dictionary file (by default embedded wn3.1 will be used)")
+        .text(
+          s"Path to WordNet dictionary file (by default embedded wn3.1 will be used)")
         .action((f, o) => o.copy(dict = Some(f))),
       opt[Int]('c', "count")
         .text(s"Count of names to generate (default ${dop.count})")
@@ -115,6 +116,8 @@ object Phgen extends App {
         case ":senses" :: Nil =>
           senses = !senses
           println("show senses: " + senses)
+        case x :: _ if x.startsWith(":") =>
+          println(s"wrong command: $x")
         case "" :: Nil => ()
         case _ =>
           val pat = g.parsePattern(input)
