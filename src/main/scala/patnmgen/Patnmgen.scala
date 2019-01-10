@@ -3,15 +3,32 @@ package patnmgen
 import scopt.OParser
 import Utils._
 
+import scala.collection.parallel.immutable.ParRange
 import scala.io.StdIn
 
 case class Opts(
-    dict: String = "local/dict",
-    count: Int = 10,
-    countSyn: Int = 1,
-    interactive: Boolean = false,
-    senses: Boolean = false
+                 dict: String = "local/dict",
+                 count: Int = 10,
+                 countSyn: Int = 1,
+                 patMode: PatMode = PatRandom,
+                 pat: List[String] = Nil,
+                 interactive: Boolean = false,
+                 senses: Boolean = false
 )
+
+object PatMode {
+  val fromString: PartialFunction[String, PatMode] = {
+    case "round" | "round-robin" => PatRoundRobin
+    case "random"                => PatRandom
+  }
+
+  def validate(s: String): Boolean =
+    fromString.isDefinedAt(s)
+}
+
+sealed trait PatMode
+case object PatRoundRobin extends PatMode
+case object PatRandom extends PatMode
 
 object Patnmgen extends App {
 
@@ -29,6 +46,12 @@ object Patnmgen extends App {
 
     OParser.sequence(
       programName("patnmgen"),
+      head(),
+      arg[String]("PATTERNS")
+        .unbounded()
+        .optional()
+        .text("Patterns that will be used for generation")
+        .action((p, o) => o.copy(pat = o.pat :+ p)),
       opt[Unit]('I', "interactive")
         .text("Interactive mode (passed patterns will be ignored)")
         .action((_, o) => o.copy(interactive = true)),
@@ -40,12 +63,20 @@ object Patnmgen extends App {
         .action((c, o) => o.copy(count = c)),
       opt[Int]('y', "syncount")
         .text(
-          s"Count of random synonyms for each name (default ${dop.countSyn})")
+          s"Count of random synonyms for each phrase (default ${dop.countSyn})")
         .action((c, o) => o.copy(countSyn = c)),
-      opt[Unit]('s', "show-senses")
-        .text("Show WordNet (alternative) senses for each used word/synset")
-        .action((_, o) => o.copy(senses = true)),
+      opt[String]('m', "pattern-mode")
+        .text("Pattern selection mode: round, random (default: random)")
+        .action((m, o) => o.copy(patMode = PatMode.fromString(m)))
+        .validate { m =>
+          if (PatMode.validate(m)) success
+          else failure("Invalid pattern mode")
+        },
+        opt [Unit] ('s', "show-senses")
+          .text("Show WordNet (alternative) senses for each used word/synset")
+          .action((_, o) => o.copy(senses = true)),
       help("help")
+        .text("Show this help")
     )
   }
 
@@ -55,6 +86,7 @@ object Patnmgen extends App {
   }
 
   val g = new Generator(opts.dict)
+  val synSep = "\n  "
 
   def interactive(): Unit = {
     var count = opts.count
@@ -82,13 +114,14 @@ object Patnmgen extends App {
         case ":senses" :: Nil =>
           senses = !senses
           println("show senses: " + senses)
+        case "" :: Nil => ()
         case _ =>
           val pat = g.parsePattern(input)
           println()
           for (i <- 1 to count) {
             val (words, rp) = g.randomForPattern(pat, syncount)
             if (senses) printSenses(words)
-            println(rp.mkString("; "))
+            println(rp.mkString(synSep))
           }
           println()
       }
@@ -98,6 +131,27 @@ object Patnmgen extends App {
   }
 
   if (opts.interactive) interactive()
-  else {}
+  else {
+
+    if (opts.pat.isEmpty)
+      esc("No patterns provided.\nEither use interactive mode or provide one or more patterns.\n")
+
+    val synCount = opts.countSyn
+    val senses = opts.senses
+
+    val op = opts.pat.map(g.parsePattern)
+    val pats = opts.patMode match {
+      case PatRoundRobin => Iterator.continually(op).flatten
+      case PatRandom =>  new RandomIter(op.toVector)
+    }
+
+    for (_ <- 0 until opts.count) {
+      val p = pats.next()
+
+      val (words, rp) = g.randomForPattern(p, synCount)
+      if (senses) printSenses(words)
+      println(rp.mkString(synSep))
+    }
+  }
 
 }

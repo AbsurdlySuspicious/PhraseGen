@@ -1,8 +1,10 @@
 package patnmgen
 
 import net.sf.extjwnl.data.IndexWord
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.Random
 
 object Utils {
 
@@ -67,6 +69,14 @@ object Utils {
       println()
     }
     println("===============\n")
+  }
+
+  class RandomIter[T](src: Seq[T]) extends Iterator[T] {
+    val rnd = new Random
+    val max = src.length
+
+    override def hasNext = true
+    override def next(): T = src(rnd.nextInt(max))
   }
 
 }
