@@ -1,7 +1,7 @@
-package patnmgen
+package phgen
 
 import org.scalatest.{FlatSpec, Matchers}
-import Utils._
+import phgen.Utils._
 
 class UtilTest extends FlatSpec with Matchers {
 

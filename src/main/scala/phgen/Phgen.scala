@@ -1,9 +1,8 @@
-package patnmgen
+package phgen
 
+import phgen.Utils._
 import scopt.OParser
-import Utils._
 
-import scala.collection.parallel.immutable.ParRange
 import scala.io.StdIn
 
 case class Opts(

@@ -1,11 +1,10 @@
-package patnmgen
+package phgen
 
 import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
+import phgen.Utils._
 
 import scala.collection.JavaConverters._
-import patnmgen.Utils._
-
 import scala.util.Random
 import scala.util.matching.Regex
 

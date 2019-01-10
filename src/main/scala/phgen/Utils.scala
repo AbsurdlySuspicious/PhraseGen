@@ -1,4 +1,4 @@
-package patnmgen
+package phgen
 
 import net.sf.extjwnl.data.IndexWord
 
