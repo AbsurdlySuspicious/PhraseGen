@@ -1,5 +1,7 @@
 package phgen
 
+import org.jline.builtins.Completers
+import org.jline.reader.{Expander, LineReader, LineReaderBuilder}
 import phgen.Utils._
 import scopt.OParser
 
@@ -94,9 +96,12 @@ object Phgen extends App {
     var count = opts.count
     var syncount = opts.countSyn
     var senses = opts.senses
+
+    val rd = LineReaderBuilder.builder().build()
+
     while (true) try {
       println("enter pattern (or :help):")
-      val input = StdIn.readLine()
+      val input = rd.readLine()
 
       input.trim.split(' ').toList match {
         case ":help" :: Nil =>
