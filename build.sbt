@@ -1,9 +1,9 @@
-name := "patnmgen"
-version := "0.1"
+name := "phgen"
+version := "1.0"
 scalaVersion := "2.12.8"
 
 mainClass in assembly := Some("patnmgen.Patnmgen")
-assemblyJarName in assembly := "patnmgen.jar"
+assemblyJarName in assembly := "phgen.jar"
 test in assembly := {}
 
 libraryDependencies ++= Seq(

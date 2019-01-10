@@ -32,12 +32,14 @@ case object PatRandom extends PatMode
 
 object Patnmgen extends App {
 
+  val version = "1.0"
+
   val dop = Opts()
 
   def esc(msg: String, code: Int = 1): Nothing = {
     println(msg)
     System.exit(code)
-    throw new Exception("uhh exit")
+    throw new Exception
   }
 
   val optB = OParser.builder[Opts]
@@ -45,8 +47,8 @@ object Patnmgen extends App {
     import optB._
 
     OParser.sequence(
-      programName("patnmgen"),
-      head(),
+      programName("phgen"),
+      head("PhraseGen", this.version),
       arg[String]("PATTERNS")
         .unbounded()
         .optional()
