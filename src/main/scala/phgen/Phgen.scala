@@ -6,7 +6,7 @@ import scopt.OParser
 import scala.io.StdIn
 
 case class Opts(
-    dict: String = "local/dict",
+    dict: Option[String] = None,
     count: Int = 10,
     countSyn: Int = 1,
     patMode: PatMode = PatRandom,
@@ -57,8 +57,8 @@ object Phgen extends App {
         .text("Interactive mode (passed patterns will be ignored)")
         .action((_, o) => o.copy(interactive = true)),
       opt[String]('d', "dict")
-        .text(s"Path to WordNet dictionary file (default ${dop.dict})")
-        .action((f, o) => o.copy(dict = f)),
+        .text(s"Path to WordNet dictionary file (by default embedded wn3.1 will be used)")
+        .action((f, o) => o.copy(dict = Some(f))),
       opt[Int]('c', "count")
         .text(s"Count of names to generate (default ${dop.count})")
         .action((c, o) => o.copy(count = c)),

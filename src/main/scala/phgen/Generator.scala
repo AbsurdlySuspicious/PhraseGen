@@ -40,9 +40,12 @@ case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
 
 class GeneratorException(m: String) extends Exception(m)
 
-class Generator(dictPath: String) {
+class Generator(dictPath: Option[String]) {
   val rnd = new Random
-  val dict = Dictionary.getFileBackedInstance(dictPath)
+  val dict = dictPath match {
+    case Some(p) => Dictionary.getFileBackedInstance(p)
+    case None    => Dictionary.getDefaultResourceInstance
+  }
 
   val bounds = ("[", "]")
 
@@ -134,7 +137,8 @@ class Generator(dictPath: String) {
     }
   }
 
-  def randomForPattern(pat: GeneratorPattern, synCount: Int): (List[IndexWord], List[String]) = {
+  def randomForPattern(pat: GeneratorPattern,
+                       synCount: Int): (List[IndexWord], List[String]) = {
     val newTk = getIdxWordsForPattern(pat)
 
     val res = for (_ <- 1 to synCount) yield {
