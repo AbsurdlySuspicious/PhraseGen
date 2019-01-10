@@ -7,13 +7,13 @@ import scala.collection.parallel.immutable.ParRange
 import scala.io.StdIn
 
 case class Opts(
-                 dict: String = "local/dict",
-                 count: Int = 10,
-                 countSyn: Int = 1,
-                 patMode: PatMode = PatRandom,
-                 pat: List[String] = Nil,
-                 interactive: Boolean = false,
-                 senses: Boolean = false
+    dict: String = "local/dict",
+    count: Int = 10,
+    countSyn: Int = 1,
+    patMode: PatMode = PatRandom,
+    pat: List[String] = Nil,
+    interactive: Boolean = false,
+    senses: Boolean = false
 )
 
 object PatMode {
@@ -72,9 +72,9 @@ object Patnmgen extends App {
           if (PatMode.validate(m)) success
           else failure("Invalid pattern mode")
         },
-        opt [Unit] ('s', "show-senses")
-          .text("Show WordNet (alternative) senses for each used word/synset")
-          .action((_, o) => o.copy(senses = true)),
+      opt[Unit]('s', "show-senses")
+        .text("Show WordNet (alternative) senses for each used word/synset")
+        .action((_, o) => o.copy(senses = true)),
       help("help")
         .text("Show this help")
     )
@@ -132,18 +132,23 @@ object Patnmgen extends App {
 
   if (opts.interactive) interactive()
   else {
-
-    if (opts.pat.isEmpty)
-      esc("No patterns provided.\nEither use interactive mode or provide one or more patterns.\n")
-
     val synCount = opts.countSyn
     val senses = opts.senses
 
-    val op = opts.pat.map(g.parsePattern)
-    val pats = opts.patMode match {
-      case PatRoundRobin => Iterator.continually(op).flatten
-      case PatRandom =>  new RandomIter(op.toVector)
-    }
+    val op = opts.pat
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .map(g.parsePattern)
+
+    if (op.isEmpty)
+      esc(
+        "No patterns provided.\nEither use interactive mode or provide one or more patterns.\n")
+
+    val pats =
+      opts.patMode match {
+        case PatRoundRobin => Iterator.continually(op).flatten
+        case PatRandom     => new RandomIter(op.toVector)
+      }
 
     for (_ <- 0 until opts.count) {
       val p = pats.next()
