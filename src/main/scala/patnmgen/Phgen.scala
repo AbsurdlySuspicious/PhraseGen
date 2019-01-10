@@ -30,7 +30,7 @@ sealed trait PatMode
 case object PatRoundRobin extends PatMode
 case object PatRandom extends PatMode
 
-object Patnmgen extends App {
+object Phgen extends App {
 
   val version = "1.0"
 
