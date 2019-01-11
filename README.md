@@ -4,7 +4,7 @@ Pattern-based random phrase generation utility using WordNet dictionaries
 
 It can be used in set of purposes such as name or password generation, inspiration for your new username or anything else you can think of
 
-When using for password generation, make sure you will __not__ use generated phrases as-is. Add some numbers and case-variety to make it more strong before brute-force attacks
+When using for password generation, make sure you will __not__ use generated phrases as-is. Consider adding some numbers and case-variety to make it more strong before brute-force attacks
 
 ## Dependencies
 
@@ -61,4 +61,6 @@ fullyChurch
 
 ---
 
-This project is based on WordNet and contains an embedded copy of WordNet 3.1 database licensed under [WordNet License](https://wordnet.princeton.edu/license-and-commercial-use). [WordNet](https://wordnet.princeton.edu/). Princeton University. 2010. 
+This project is based on WordNet and contains an embedded copy of WordNet 3.1 database licensed under [WordNet License](https://wordnet.princeton.edu/license-and-commercial-use). [WordNet](https://wordnet.princeton.edu/). Princeton University. 2010.
+
+PhraseGen © AbsurdlySuspicious. Licensed under Apache License 2.0
