@@ -14,7 +14,7 @@ When using for password generation, make sure you will __not__ use generated phr
 ## Packages and builds
 
 + Prebuilt jars can be found in releases tab
-+ Archlinux AUR packages:
++ Archlinux __AUR__ packages:
   + bin version: TBA
   + built from source: TBA
 
@@ -26,9 +26,9 @@ Get sbt (Scala Build Tool) and run `sbt assembly` in project directory. Resultin
 
 Options manual can be obtained with `--help`. It also supports interactive mode with flag `-I`
 
-Pattern description can be found [here](docs/pattern_syntax.md)
+__Pattern description__ can be found [here](docs/pattern_syntax.md)
 
-Help pages (`--help` and interactive `:help`) also duplicated [here](docs/help.md)
+__Help pages__ (`--help` and interactive `:help`) also duplicated [here](docs/help.md)
 
 ## Examples of generated phrases
 

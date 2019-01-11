@@ -44,10 +44,10 @@ golden fairy lantern
 
 So, the actual word modes (`wm`) list:
 
-+ __First Word__ `[fw]`: `golden`
-+ __Last Word__ `[lw]`: `lantern`
-+ __Random Word__ `[rw]`: any of `golden`, `fairy` or `lantern`
-+ __Separator__ `[sep(-)]`: `golden_fairy_lantern`
++ __First Word__ `fw`: `golden`
++ __Last Word__ `lw`: `lantern`
++ __Random Word__ `rw`: any of `golden`, `fairy` or `lantern`
++ __Separator__ `sep(-)`: `golden-fairy-lantern`
 
 `fw` and `lw` selects first or last word of a phrase accordingly, `rw` just selects random word from a phrase, and `sep` replaces space with separator provided in parentheses followed by it
 
