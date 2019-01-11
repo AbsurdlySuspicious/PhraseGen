@@ -17,7 +17,7 @@ Usage: phgen [options] [PATTERNS]
   --help                   Show this help
 ```
 
-## Interactive help
+## Interactive mode help
 
 ```
 Usage: PATTERN or command
