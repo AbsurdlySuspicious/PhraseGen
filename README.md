@@ -15,7 +15,8 @@ When using for password generation, make sure you will __not__ use generated phr
 
 + Prebuilt jars can be found in releases tab
 + Archlinux __AUR__ packages:
-  + release (installs jar): https://aur.archlinux.org/packages/phgen/
+  + release (installs jar): https://aur.archlinux.org/packages/phgen
+  + master (builds from source): https://aur.archlinux.org/packages/phgen-git
 
 ## Build
 
