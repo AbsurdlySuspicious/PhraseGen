@@ -18,7 +18,7 @@
 package phgen
 
 import org.jline.builtins.Completers
-import org.jline.reader.{Expander, LineReader, LineReaderBuilder}
+import org.jline.reader.{Expander, LineReader, LineReaderBuilder, UserInterruptException}
 import phgen.Utils._
 import scopt.OParser
 
@@ -49,7 +49,7 @@ case object PatRoundRobin extends PatMode
 case object PatRandom extends PatMode
 
 object Phgen extends App {
-
+  val ts = time
   val version = "1.0"
 
   val dop = Opts()
@@ -60,6 +60,7 @@ object Phgen extends App {
     throw new Exception
   }
 
+  val psts = time
   val optB = OParser.builder[Opts]
   val optP = {
     import optB._
@@ -100,14 +101,31 @@ object Phgen extends App {
         .text("Show this help")
     )
   }
+  val pste = time
 
+  val ppts = time
   val opts = OParser.parse(optP, args, dop) match {
     case Some(o) => o
     case None    => esc("")
   }
+  val ppte = time
 
+  val gts = time
   val g = new Generator(opts.dict)
+  val gte = time
   val synSep = "\n  "
+
+  val te = time
+
+  val times =
+    s"""
+       |Whole bootstrap:     ${te - ts}ms
+       |Opt parser setup:    ${pste - psts}ms
+       |Opt parser routine:  ${ppte - ppts}ms
+       |Generator setup:     ${gte - gts}ms
+     """.stripMargin
+
+  println(times)
 
   def interactive(): Unit = {
     var count = opts.count
@@ -152,6 +170,7 @@ object Phgen extends App {
           println()
       }
     } catch {
+      case _: UserInterruptException => return
       case x: Exception => println("error:\n" + x)
     }
   }

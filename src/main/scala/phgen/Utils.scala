@@ -25,6 +25,8 @@ import scala.util.Random
 
 object Utils {
 
+  def time = System.currentTimeMillis()
+
   case class ParsedPattern(
       around: List[String],
       tokens: List[(Int, String)]
