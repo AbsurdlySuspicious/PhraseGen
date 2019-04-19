@@ -21,6 +21,8 @@ import org.jline.reader.{LineReaderBuilder, UserInterruptException}
 import phgen.Utils._
 import scopt.OParser
 
+import scala.io.StdIn
+
 case class Opts(
     dict: Option[String] = None,
     gen: GeneratorType = GenNative,
@@ -56,7 +58,7 @@ object GeneratorType {
 
 object Phgen {
   def main(args: Array[String]): Unit = {
-    val ts      = time
+    val ts           = time
     val phgenVersion = "2.0"
 
     val dop = Opts()
@@ -153,45 +155,53 @@ object Phgen {
       println(w.mkString(";"))
 
     def interactive(): Unit = {
+      val syncount = 1
       var count    = opts.count
-      var syncount = opts.countSyn
       var senses   = opts.senses
 
-      val rd = LineReaderBuilder.builder().build()
+      val cmd    = matcher("^:[^:].*".r)
+      val cmdEsc = matcher("^::.*".r)
+      val rd     = LineReaderBuilder.builder().build()
+
+      val patParse = (in: String) => {
+        val pat = g.parsePattern(in)
+        println()
+        for (_ <- 1 to count) {
+          val res = g.randomForPattern(pat, syncount, senses)
+          printSyn(res.syn)
+          printSenses(res.senses)
+        }
+        println()
+      }
 
       while (true) try {
         println("enter pattern (or :help):")
-        val input = rd.readLine()
+        val in = rd.readLine()
 
-        input.trim.split(' ').toList match {
+        if (cmd(in)) in.trim.split(' ').toList match {
           case ":help" :: Nil =>
             println("""
-                |Usage: PATTERN or command
-                |
-                |Commands:
-                |:exit, :q - exit interactive mode
-                |:count - show or change amount of phrases per pattern
-                |:senses - toggle showing senses
-              """.stripMargin)
+                      |Usage: PATTERN or command
+                      |
+                      |Commands:
+                      |:exit, :q - exit interactive mode
+                      |:count - show or change amount of phrases per pattern
+                      |:senses - toggle showing senses
+                    """.stripMargin)
           case (":exit" | ":q") :: Nil => return
           case ":count" :: Nil         => println(count)
           case ":count" :: s :: Nil    => count = s.toInt
           case ":senses" :: Nil =>
             senses = !senses
             println("show senses: " + senses)
-          case x :: _ if x.startsWith(":") =>
+          case x :: _ =>
             println(s"wrong command: $x")
-          case "" :: Nil => ()
           case _ =>
-            val pat = g.parsePattern(input)
-            println()
-            for (i <- 1 to count) {
-              val res = g.randomForPattern(pat, syncount, senses)
-              printSyn(res.syn)
-              printSenses(res.senses)
-            }
-            println()
+            throw new Exception("wrong command match")
         }
+        else if (cmdEsc(in)) patParse(in.stripPrefix(":"))
+        else patParse(in)
+
       } catch {
         case _: UserInterruptException => return
         case x: Throwable              => println("error:\n" + x)

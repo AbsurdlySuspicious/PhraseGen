@@ -19,8 +19,11 @@ package phgen
 
 import scala.collection.mutable
 import scala.util.Random
+import scala.util.matching.Regex
 
 object Utils {
+
+  def matcher(r: Regex) = (in: String) => r.pattern.matcher(in).matches
 
   def time = System.currentTimeMillis()
 
@@ -28,7 +31,7 @@ object Utils {
     val rnd = new Random
     val max = src.length
 
-    override def hasNext = true
+    override def hasNext   = true
     override def next(): T = src(rnd.nextInt(max))
   }
 

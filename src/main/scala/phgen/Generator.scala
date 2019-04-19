@@ -196,8 +196,7 @@ case class NatIndex(pos: PS, lemma: String, sensesOff: List[Int])
 case class NatData(pos: PS, words: List[String], sense: String)
 
 object GeneratorNative {
-  val numPat = "[0-9]+".r.pattern
-  val isNum  = (s: String) => numPat.matcher(s).matches
+  val isNum  = matcher("[0-9]+".r)
   val notNum = isNum.andThen(!_)
 }
 
