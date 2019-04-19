@@ -199,7 +199,9 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
       pat.patStr(newRp)
     }
 
-    val s = getSenses(newTk.map(_._2))
+    val s =
+      if (needSenses) getSenses(newTk.map(_._2))
+      else Nil
     GeneratorResponse(res.toList, s)
   }
 
@@ -354,7 +356,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
         case ((w, s), (ws, ss)) => (w :: ws, s ::: ss)
       }
 
-    val singleSyn = pat.patStr(repTokens) // todo syns
+    val singleSyn = pat.patStr(repTokens) // todo syns (or rm)
     GeneratorResponse(singleSyn :: Nil, senses)
   }
 
