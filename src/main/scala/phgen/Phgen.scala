@@ -23,7 +23,7 @@ import scopt.OParser
 
 case class Opts(
     dict: Option[String] = None,
-    gen: GeneratorType = GenJwnl,
+    gen: GeneratorType = GenNative,
     count: Int = 10,
     countSyn: Int = 1,
     patMode: PatMode = PatRandom,
