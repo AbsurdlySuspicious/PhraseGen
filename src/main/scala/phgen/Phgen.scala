@@ -198,14 +198,14 @@ object Phgen extends App {
           println()
           for (i <- 1 to count) {
             val res = g.randomForPattern(pat, syncount, senses)
-            printSenses(res.senses)
             printSyn(res.syn)
+            printSenses(res.senses)
           }
           println()
       }
     } catch {
       case _: UserInterruptException => return
-      case x: Throwable              => println("error:\n" + x)
+      case x: Throwable              => println("error:\n" + x); throw x
     }
   }
 
@@ -233,8 +233,8 @@ object Phgen extends App {
       val p = pats.next()
 
       val res = g.randomForPattern(p, synCount, senses)
-      printSenses(res.senses)
       printSyn(res.syn)
+      printSenses(res.senses)
     }
   }
 

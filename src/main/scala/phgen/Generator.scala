@@ -17,20 +17,14 @@
 
 package phgen
 
-import java.io.{
-  BufferedInputStream,
-  BufferedReader,
-  File,
-  FileInputStream,
-  FileReader,
-  RandomAccessFile
-}
+import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream, FileReader, RandomAccessFile}
 
 import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
 import phgen.Utils._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.Random
@@ -223,17 +217,19 @@ case class NatPosFiles(index: File, data: File, offsets: File)
     dataR.close()
   }
 
-  val indexOffsets: Array[Int] =
+  val indexOffsets: Seq[Int] =
     if (offsets.exists) {
+      println("g2 indexOffsets init: from file")
       val s     = Source.fromFile(offsets)
       val lr    = s.getLines()
       val count = lr.next().toInt
-      val o     = new ArrayBuffer[Int](count)
+      val o     = new Array[Int](count)
       for ((l, i) <- lr.zipWithIndex) o(i) = l.toInt
       s.close()
-      o.toArray
+      o
     }
     else {
+      println("g2 indexOffsets init: straight")
       val lf = '\n'.toInt
       val o  = new ArrayBuffer[Int]
       val s = new BufferedInputStream(
@@ -247,7 +243,7 @@ case class NatPosFiles(index: File, data: File, offsets: File)
         b = s.read()
       }
       s.close()
-      o.toArray
+      o
     }
 
   val indexOffsetsLength =
@@ -310,7 +306,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
   def dataLine(pos: PS, off: Int): NatData = {
     // synset_offset  lex_filenum  ss_type  w_cnt  word  lex_id  [word  lex_id...]  p_cnt  [ptr...]  [frames...] | gloss
     val data :: gloss =
-      line(pos, off, _.dataR).split("|").toList
+      line(pos, off, _.dataR).split("\\|").toList
 
     val dataOff :: _ :: _ :: _ :: tailWords =
       data.split(" ").toList
@@ -318,7 +314,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
     val words = tailWords
       .grouped(2)
       .collect {
-        case word :: lex :: Nil if isNum(lex) => word
+        case word :: lex :: Nil if isNum(lex) => word.replaceAll("_", " ")
       }
       .toList
 
@@ -345,7 +341,8 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
             if (needSenses)
               i.sensesOff
                 .map(so => dataLine(pos, so))
-                .map(d => s"| [${d.pos.ext}] ${d.words.mkString(", ")}: ${d.sense}")
+                .map(d =>
+                  s"| [${d.pos.ext}] ${d.words.mkString(", ")}: ${d.sense}")
             else Nil
           val word = applyWM(i.lemma, wm)
           (word, s)
