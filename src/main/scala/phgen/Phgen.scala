@@ -226,4 +226,5 @@ object Phgen extends App {
     }
   }
 
+  g.cleanup()
 }

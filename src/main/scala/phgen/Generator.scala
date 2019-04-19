@@ -224,6 +224,7 @@ case class NatPosFiles(pos: PS, index: File, data: File, offsets: File)
   def close(): Unit = {
     indexR.close()
     dataR.close()
+    println(s"g2 npf (${pos.ext}) cleanup")
   }
 
   val indexOffsets: Seq[Int] =
