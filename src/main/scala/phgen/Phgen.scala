@@ -18,6 +18,7 @@
 package phgen
 
 import org.jline.reader.{LineReaderBuilder, UserInterruptException}
+import org.jline.terminal.TerminalBuilder
 import phgen.Utils._
 import scopt.OParser
 
@@ -161,7 +162,18 @@ object Phgen {
 
       val cmd    = matcher("^:[^:].*".r)
       val cmdEsc = matcher("^::.*".r)
-      val rd     = LineReaderBuilder.builder().build()
+
+      val term = TerminalBuilder
+        .builder()
+        .jansi(false)
+        .jna(false)
+        .dumb(true)
+        .build()
+
+      val rd = LineReaderBuilder
+        .builder()
+        //.terminal(term)
+        .build()
 
       val patParse = (in: String) => {
         val pat = g.parsePattern(in)
@@ -171,14 +183,15 @@ object Phgen {
           printSyn(res.syn)
           printSenses(res.senses)
         }
-        println()
       }
 
       while (true) try {
-        println("enter pattern (or :help):")
+        println("\nenter pattern (or :help)")
         val in = rd.readLine()
+        val tr = in.trim
 
-        if (cmd(in)) in.trim.split(' ').toList match {
+        if (tr == "") {}
+        else if (cmd(in)) tr.split(' ').toList match {
           case ":help" :: Nil =>
             println("""
                       |Usage: PATTERN or command
