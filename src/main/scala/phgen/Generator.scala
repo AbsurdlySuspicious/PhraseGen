@@ -158,56 +158,6 @@ trait Generator {
                        needSenses: Boolean): GeneratorResponse
 }
 
-class GeneratorJwnl(dictPath: Option[String]) extends Generator {
-  val generatorName = "jwnl"
-
-  def cleanup(): Unit = ()
-
-  val dict = dictPath match {
-    case Some(p) => Dictionary.getFileBackedInstance(p)
-    case None    => Dictionary.getDefaultResourceInstance
-  }
-
-  protected def getIdxWordsForPattern(
-      p: GeneratorPattern): List[(GeneratorToken, IndexWord)] =
-    p.tokens.map { t =>
-      val word = t.searchQuery match {
-        case Some(q) => dict.lookupIndexWord(t.ps.orig, q)
-        case None    => dict.getRandomIndexWord(t.ps.orig)
-      }
-      (t, word)
-    }
-
-  protected def synSelector(w: IndexWord, wm: WordMode): String = {
-    val senses = w.getSenses.asScala
-    val syn    = randElem(senses)
-    val words  = syn.getWords.asScala
-    val word   = randElem(words)
-    val lemma  = word.getLemma
-    applyWM(lemma, wm)
-  }
-
-  def getSenses(words: List[IndexWord]): List[String] =
-    words.flatMap(_.getSenses.asScala.map(_.toString))
-
-  def randomForPattern(pat: GeneratorPattern,
-                       synCount: Int,
-                       needSenses: Boolean): GeneratorResponse = {
-    val newTk = getIdxWordsForPattern(pat)
-
-    val res = for (_ <- 1 to synCount) yield {
-      val newRp = for ((t, w) <- newTk) yield synSelector(w, t.wm)
-      pat.patStr(newRp)
-    }
-
-    val s =
-      if (needSenses) getSenses(newTk.map(_._2))
-      else Nil
-    GeneratorResponse(res.toList, s)
-  }
-
-}
-
 trait NatFileHolder {
   def rafRO(f: File) = new RandomAccessFile(f, "r")
   def close(): Unit

@@ -60,9 +60,6 @@ object GeneratorType {
     "jwnl"   -> GenJwnl,
     "native" -> GenNative
   )
-
-  val gNames =
-    gMap.keys.toList
 }
 
 object Phgen extends App {
@@ -76,6 +73,13 @@ object Phgen extends App {
     System.exit(code)
     throw new Exception
   }
+
+  def printVariants(v: Iterable[String], d: String) =
+    v.map {
+        case x if x == d => s"$x (default)"
+        case x           => x
+      }
+      .mkString(", ")
 
   val psts = time
   val optB = OParser.builder[Opts]
@@ -98,7 +102,9 @@ object Phgen extends App {
           s"Path to WordNet dictionary file (by default embedded wn3.1 will be used)")
         .action((f, o) => o.copy(dict = Some(f))),
       opt[String]('g', "generator")
-        .text(s"Generator type (${GeneratorType.gNames.mkString(", ")})")
+      //.hidden()
+        .text(
+          s"Generator type: ${printVariants(GeneratorType.gMap.keys, "native")}")
         .action((g, o) =>
           o.copy(gen =
             GeneratorType.gMap.getOrElse(g, esc(s"Unknown generator: $g")))),
@@ -106,7 +112,8 @@ object Phgen extends App {
         .text(s"Amount of phrases to generate (default ${dop.count})")
         .action((c, o) => o.copy(count = c)),
       opt[String]('m', "pattern-mode")
-        .text("Pattern selection mode: round, random (default)")
+        .text(
+          s"Pattern selection mode: ${printVariants(PatMode.modeMap.keys, "round")}")
         .action((m, o) =>
           o.copy(
             patMode = PatMode.modeMap.getOrElse(m, esc(s"Unknown mode: $m")))),
@@ -128,10 +135,11 @@ object Phgen extends App {
 
   val gts = time
   val g = opts.gen match {
-    case GenJwnl   => new GeneratorJwnl(opts.dict)
+    case GenJwnl =>
+      esc("jwnl backend isn't supported anymore") //new GeneratorJwnl(opts.dict)
     case GenNative => new GeneratorNative(opts.dict)
   }
-  val gte    = time
+  val gte = time
 
   val te = time
 
