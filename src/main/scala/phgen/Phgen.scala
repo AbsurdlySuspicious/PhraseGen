@@ -165,9 +165,9 @@ object Phgen {
 
       val term = TerminalBuilder
         .builder()
-        .jansi(false)
-        .jna(false)
-        .dumb(true)
+        //.jansi(false)
+        //.jna(false)
+        //.dumb(true)
         .build()
 
       val rd = LineReaderBuilder
