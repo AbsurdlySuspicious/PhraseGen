@@ -17,7 +17,14 @@
 
 package phgen
 
-import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream, FileReader, RandomAccessFile}
+import java.io.{
+  BufferedInputStream,
+  BufferedReader,
+  File,
+  FileInputStream,
+  FileReader,
+  RandomAccessFile
+}
 
 import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
@@ -206,8 +213,10 @@ trait NatFileHolder {
   def close(): Unit
 }
 
-case class NatPosFiles(index: File, data: File, offsets: File)
+case class NatPosFiles(pos: PS, index: File, data: File, offsets: File)
     extends NatFileHolder {
+
+  private val pref = s"g2 indexOffsets (${pos.ext}) init:"
 
   val indexR = rafRO(index)
   val dataR  = rafRO(data)
@@ -219,7 +228,7 @@ case class NatPosFiles(index: File, data: File, offsets: File)
 
   val indexOffsets: Seq[Int] =
     if (offsets.exists) {
-      println("g2 indexOffsets init: from file")
+      println(s"$pref from file")
       val s     = Source.fromFile(offsets)
       val lr    = s.getLines()
       val count = lr.next().toInt
@@ -229,7 +238,7 @@ case class NatPosFiles(index: File, data: File, offsets: File)
       o
     }
     else {
-      println("g2 indexOffsets init: straight")
+      println(s"$pref straight")
       val lf = '\n'.toInt
       val o  = new ArrayBuffer[Int]
       val s = new BufferedInputStream(
@@ -272,8 +281,10 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
 
   val res = (p: String) => new File(dictDir, p)
   val wn  = res.compose[String](p => s"$p/")
-  val posF = ((p: PS) => p.ext).andThen(e =>
-    NatPosFiles(wn(s"index.$e"), wn(s"data.$e"), wn(s"indexOffsets.$e")))
+  val posF = (p: PS) => {
+    val e = p.ext
+    NatPosFiles(p, wn(s"index.$e"), wn(s"data.$e"), wn(s"indexOffsets.$e"))
+  }
 
   val wnFiles: Map[PS, NatPosFiles] =
     List(Noun, Verb, Adj, Adverb)
@@ -313,9 +324,13 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
 
     val words = tailWords
       .grouped(2)
-      .collect {
-        case word :: lex :: Nil if isNum(lex) => word.replaceAll("_", " ")
+      .map {
+        case word :: lex :: Nil if lex.length == 1 && isNum(lex) =>
+          Some(word.replaceAll("_", " "))
+        case _ => None
       }
+      .takeWhile(_.nonEmpty)
+      .flatten
       .toList
 
     val sense =
@@ -342,7 +357,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
               i.sensesOff
                 .map(so => dataLine(pos, so))
                 .map(d =>
-                  s"| [${d.pos.ext}] ${d.words.mkString(", ")}: ${d.sense}")
+                  s"| [${d.pos.ext}] ${d.words.mkString(", ")} --- ${d.sense}")
             else Nil
           val word = applyWM(i.lemma, wm)
           (word, s)
