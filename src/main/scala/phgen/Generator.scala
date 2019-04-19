@@ -271,11 +271,11 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
 
   val dictDir = dictPath match {
     case Some(p) => new File(p)
-    case None    => new File(getClass.getResource("/dict-native").getPath)
+    case None    => new File(getClass.getResource("/dict-native/wn3.1").getPath)
   }
 
   val res = (p: String) => new File(dictDir, p)
-  val wn  = res.compose[String](p => s"wn3.1/$p")
+  val wn  = res.compose[String](p => s"$p/")
   val posF = ((p: PS) => p.ext).andThen(e =>
     NatPosFiles(wn(s"index.$e"), wn(s"data.$e"), wn(s"indexOffsets.$e")))
 
