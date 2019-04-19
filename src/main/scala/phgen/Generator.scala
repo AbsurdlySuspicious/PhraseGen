@@ -345,7 +345,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
             if (needSenses)
               i.sensesOff
                 .map(so => dataLine(pos, so))
-                .map(d => s"| (${d.pos.ext}) ${d.words.mkString(", ")}: ${d.sense}")
+                .map(d => s"| [${d.pos.ext}] ${d.words.mkString(", ")}: ${d.sense}")
             else Nil
           val word = applyWM(i.lemma, wm)
           (word, s)
