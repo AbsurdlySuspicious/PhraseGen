@@ -18,7 +18,12 @@
 package phgen
 
 import org.jline.builtins.Completers
-import org.jline.reader.{Expander, LineReader, LineReaderBuilder, UserInterruptException}
+import org.jline.reader.{
+  Expander,
+  LineReader,
+  LineReaderBuilder,
+  UserInterruptException
+}
 import phgen.Utils._
 import scopt.OParser
 
@@ -26,6 +31,7 @@ import scala.io.StdIn
 
 case class Opts(
     dict: Option[String] = None,
+    gen: GeneratorType = GenJwnl,
     count: Int = 10,
     countSyn: Int = 1,
     patMode: PatMode = PatRandom,
@@ -47,6 +53,20 @@ object PatMode {
 sealed trait PatMode
 case object PatRoundRobin extends PatMode
 case object PatRandom extends PatMode
+
+sealed trait GeneratorType
+case object GenJwnl extends GeneratorType
+case object GenNative extends GeneratorType
+
+object GeneratorType {
+  val gMap = Map(
+    "jwnl" -> GenJwnl,
+    "native" -> GenNative
+  )
+
+  val gNames =
+    gMap.keys.toList
+}
 
 object Phgen extends App {
   val ts = time
@@ -80,6 +100,11 @@ object Phgen extends App {
         .text(
           s"Path to WordNet dictionary file (by default embedded wn3.1 will be used)")
         .action((f, o) => o.copy(dict = Some(f))),
+      opt[String]('g', "generator")
+        .text(s"Generator type (${GeneratorType.gNames.mkString(", ")})")
+        .action((g, o) =>
+          o.copy(gen =
+            GeneratorType.gMap.getOrElse(g, esc(s"Unknown generator: $g")))),
       opt[Int]('c', "count")
         .text(s"Count of names to generate (default ${dop.count})")
         .action((c, o) => o.copy(count = c)),
@@ -111,7 +136,10 @@ object Phgen extends App {
   val ppte = time
 
   val gts = time
-  val g = new Generator(opts.dict)
+  val g = opts.gen match {
+    case GenJwnl   => new GeneratorJwnl(opts.dict)
+    case GenNative => new GeneratorNative(opts.dict)
+  }
   val gte = time
   val synSep = "\n  "
 
@@ -122,7 +150,7 @@ object Phgen extends App {
        |Whole bootstrap:     ${te - ts}ms
        |Opt parser setup:    ${pste - psts}ms
        |Opt parser routine:  ${ppte - ppts}ms
-       |Generator setup:     ${gte - gts}ms
+       |Generator setup:     ${gte - gts}ms (${g.generatorName})
      """.stripMargin
 
   println(times)
@@ -144,11 +172,11 @@ object Phgen extends App {
             |Usage: PATTERN or command
             |
             |Commands:
-            |:exit - exit interactive mode
+            |:exit, :q - exit interactive mode
             |:count, :syncount - show or change corresponding counts
             |:senses - toggle showing senses
           """.stripMargin)
-        case ":exit" :: Nil          => return
+        case (":exit" | ":q") :: Nil => return
         case ":count" :: Nil         => println(count)
         case ":count" :: s :: Nil    => count = s.toInt
         case ":syncount" :: Nil      => println(syncount)
@@ -171,7 +199,7 @@ object Phgen extends App {
       }
     } catch {
       case _: UserInterruptException => return
-      case x: Exception => println("error:\n" + x)
+      case x: Throwable              => println("error:\n" + x)
     }
   }
 

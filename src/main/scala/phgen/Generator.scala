@@ -57,12 +57,7 @@ case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
 
 class GeneratorException(m: String) extends Exception(m)
 
-class Generator(dictPath: Option[String]) {
-  val rnd = new Random
-  val dict = dictPath match {
-    case Some(p) => Dictionary.getFileBackedInstance(p)
-    case None    => Dictionary.getDefaultResourceInstance
-  }
+trait Generator {
 
   val bounds = ("[", "]")
 
@@ -73,11 +68,7 @@ class Generator(dictPath: Option[String]) {
   val posReParam = "param"
   val posRe = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
 
-  def rand(max: Int) = rnd.nextInt(max)
-
-  def randElem[T](s: Seq[T]): T = s(rand(s.length))
-
-  def ex(msg: String) = throw new GeneratorException(msg)
+  protected def ex(msg: String) = throw new GeneratorException(msg)
 
   def parsePattern(pat: String): GeneratorPattern = {
     val p = patternParse(pat, bounds)
@@ -125,7 +116,27 @@ class Generator(dictPath: Option[String]) {
     GeneratorPattern(p, tokens)
   }
 
-  def getIdxWordsForPattern(
+  def generatorName: String
+
+  def randomForPattern(pat: GeneratorPattern,
+                       synCount: Int): (List[IndexWord], List[String])
+}
+
+class GeneratorJwnl(dictPath: Option[String]) extends Generator {
+  val generatorName = "jwnl"
+
+  val dict = dictPath match {
+    case Some(p) => Dictionary.getFileBackedInstance(p)
+    case None    => Dictionary.getDefaultResourceInstance
+  }
+
+  val rnd = new Random
+
+  protected def rand(max: Int) = rnd.nextInt(max)
+
+  protected def randElem[T](s: Seq[T]): T = s(rand(s.length))
+
+  protected def getIdxWordsForPattern(
       p: GeneratorPattern): List[(GeneratorToken, IndexWord)] =
     p.tokens.map { t =>
       val word = t.searchQuery match {
@@ -135,7 +146,7 @@ class Generator(dictPath: Option[String]) {
       (t, word)
     }
 
-  def synSelector(w: IndexWord, wm: WordMode): String = {
+  protected def synSelector(w: IndexWord, wm: WordMode): String = {
     val senses = w.getSenses.asScala
     val syn = randElem(senses)
     val words = syn.getWords.asScala
@@ -165,5 +176,14 @@ class Generator(dictPath: Option[String]) {
 
     (newTk.map(_._2), res.toList)
   }
+
+}
+
+class GeneratorNative(dictPath: Option[String]) extends Generator {
+  val generatorName = "native"
+
+  //val dict = dictPath match {}
+
+  override def randomForPattern(pat: GeneratorPattern, synCount: Int) = ???
 
 }
