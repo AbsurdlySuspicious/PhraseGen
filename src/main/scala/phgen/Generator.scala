@@ -17,42 +17,22 @@
 
 package phgen
 
-import java.io.{
-  BufferedInputStream,
-  BufferedReader,
-  File,
-  FileInputStream,
-  FileReader,
-  RandomAccessFile
-}
+import java.io.{BufferedInputStream, File, FileInputStream, RandomAccessFile}
 
-import net.sf.extjwnl.data.{IndexWord, POS}
-import net.sf.extjwnl.dictionary.Dictionary
 import phgen.Utils._
+import phgen.Pattern._
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.Random
 import scala.util.matching.Regex
 
-object PS {
-  def fromOrig(ps: POS): PS = ps match {
-    case POS.ADJECTIVE => Adj
-    case POS.ADVERB    => Adverb
-    case POS.VERB      => Verb
-    case POS.NOUN      => Noun
-    case _             => throw new Exception("invalid POS")
-  }
-}
+sealed class PS(val ext: String)
 
-sealed class PS(val orig: POS, val ext: String)
-
-case object Noun   extends PS(POS.NOUN, "noun")
-case object Verb   extends PS(POS.VERB, "verb")
-case object Adverb extends PS(POS.ADVERB, "adv")
-case object Adj    extends PS(POS.ADJECTIVE, "adj")
+case object Noun   extends PS("noun")
+case object Verb   extends PS("verb")
+case object Adverb extends PS("adv")
+case object Adj    extends PS("adj")
 
 sealed trait WordMode
 

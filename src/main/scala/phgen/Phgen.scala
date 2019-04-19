@@ -17,17 +17,9 @@
 
 package phgen
 
-import org.jline.builtins.Completers
-import org.jline.reader.{
-  Expander,
-  LineReader,
-  LineReaderBuilder,
-  UserInterruptException
-}
+import org.jline.reader.{LineReaderBuilder, UserInterruptException}
 import phgen.Utils._
 import scopt.OParser
-
-import scala.io.StdIn
 
 case class Opts(
     dict: Option[String] = None,

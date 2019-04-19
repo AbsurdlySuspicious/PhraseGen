@@ -19,6 +19,7 @@ package phgen
 
 import org.scalatest.{FlatSpec, Matchers}
 import phgen.Utils._
+import phgen.Pattern._
 
 class UtilTest extends FlatSpec with Matchers {
 

@@ -17,68 +17,12 @@
 
 package phgen
 
-import net.sf.extjwnl.data.IndexWord
-
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.Random
 
 object Utils {
 
   def time = System.currentTimeMillis()
-
-  case class ParsedPattern(
-      around: List[String],
-      tokens: List[(Int, String)]
-  )
-
-  def patternParse(input: String, tokenBounds: (String, String)): ParsedPattern = {
-
-    val (lb, rb) = tokenBounds
-    val rbl = rb.length
-    val bt = new mutable.ArrayBuffer[String]
-    val tk = new mutable.ArrayBuffer[(Int, String)]
-
-    val buf = new StringBuffer(input)
-    val inl = input.length
-    var idx = 0
-
-    var i = 0
-    while (idx < inl) {
-      val open = buf.indexOf(lb, idx)
-
-      if (open < 0) {
-        val lastPref = buf.substring(idx, inl)
-        bt += lastPref
-        idx = inl
-      } else {
-        val close = buf.indexOf(rb, open)
-        val pref = buf.substring(idx, open)
-        val token = i -> buf.substring(open, close).stripPrefix(lb)
-
-        bt += pref
-        tk += token
-        idx = close + rbl
-        i += 1
-      }
-    }
-
-    ParsedPattern(bt.toList, tk.toList)
-  }
-
-  def makePatternStrList(around: List[String],
-                         replaceTokens: List[String]): String = {
-    val b = new StringBuffer()
-    val rp = mutable.ArrayStack(replaceTokens: _*)
-    val ar = mutable.ArrayStack(around: _*)
-
-    while (ar.nonEmpty) {
-      b.append(ar.pop())
-      if (rp.nonEmpty) b.append(rp.pop())
-    }
-
-    b.toString
-  }
 
   class RandomIter[T](src: Seq[T]) extends Iterator[T] {
     val rnd = new Random
