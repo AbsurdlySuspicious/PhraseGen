@@ -191,7 +191,7 @@ object Phgen extends App {
           val pat = g.parsePattern(input)
           println()
           for (i <- 1 to count) {
-            val (words, rp) = g.randomForPattern(pat, syncount)
+            val (words, rp) = g.randomForPattern(pat, syncount, senses)
             if (senses) printSenses(words)
             println(rp.mkString(synSep))
           }
@@ -226,7 +226,7 @@ object Phgen extends App {
     for (_ <- 0 until opts.count) {
       val p = pats.next()
 
-      val (words, rp) = g.randomForPattern(p, synCount)
+      val (words, rp) = g.randomForPattern(p, synCount, senses)
       if (senses) printSenses(words)
       println(rp.mkString(synSep))
     }

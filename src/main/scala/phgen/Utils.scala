@@ -66,11 +66,11 @@ object Utils {
     ParsedPattern(bt.toList, tk.toList)
   }
 
-  def makePatternStrList(pattern: ParsedPattern,
+  def makePatternStrList(around: List[String],
                          replaceTokens: List[String]): String = {
     val b = new StringBuffer()
     val rp = mutable.ArrayStack(replaceTokens: _*)
-    val ar = mutable.ArrayStack(pattern.around: _*)
+    val ar = mutable.ArrayStack(around: _*)
 
     while (ar.nonEmpty) {
       b.append(ar.pop())

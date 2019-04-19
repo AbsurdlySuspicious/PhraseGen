@@ -17,7 +17,14 @@
 
 package phgen
 
-import java.io.{File, FileInputStream}
+import java.io.{
+  BufferedInputStream,
+  BufferedReader,
+  File,
+  FileInputStream,
+  FileReader,
+  RandomAccessFile
+}
 
 import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
@@ -54,9 +61,12 @@ case object RandomWord          extends WordMode
 case object FirstWord           extends WordMode
 case object LastWord            extends WordMode
 
+case class GeneratorResponse(syn: List[String], senses: List[String])
 case class GeneratorToken(ps: PS, wm: WordMode, searchQuery: Option[String])
-case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
-  def patStr(t: List[String]): String = makePatternStrList(p, t)
+case class GeneratorPattern(around: List[String],
+                            tokens: List[GeneratorToken]) {
+  def patStr(repTokens: List[String]): String =
+    makePatternStrList(around, repTokens)
 }
 
 class GeneratorException(m: String) extends Exception(m)
@@ -71,6 +81,12 @@ trait Generator {
   val posRePOS   = "pos"
   val posReParam = "param"
   val posRe      = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
+
+  val rnd = new Random
+
+  protected def rand(max: Int) = rnd.nextInt(max)
+
+  protected def randElem[T](s: Seq[T]): T = s(rand(s.length))
 
   protected def ex(msg: String) = throw new GeneratorException(msg)
 
@@ -117,28 +133,39 @@ trait Generator {
           GeneratorToken(ps, wm, posParam)
       }
 
-    GeneratorPattern(p, tokens)
+    GeneratorPattern(p.around, tokens)
+  }
+
+  def applyWM(lemma: String, wm: WordMode): String = {
+    def split = lemma.split(' ')
+
+    wm match {
+      case Full         => lemma
+      case FirstWord    => split.head
+      case LastWord     => split.last
+      case WithSep(sep) => split.mkString(sep)
+      case RandomWord   => randElem(split)
+    }
   }
 
   def generatorName: String
 
+  def cleanup(): Unit
+
   def randomForPattern(pat: GeneratorPattern,
-                       synCount: Int): (List[IndexWord], List[String])
+                       synCount: Int,
+                       needSenses: Boolean): (List[IndexWord], List[String])
 }
 
 class GeneratorJwnl(dictPath: Option[String]) extends Generator {
   val generatorName = "jwnl"
 
+  def cleanup(): Unit = ()
+
   val dict = dictPath match {
     case Some(p) => Dictionary.getFileBackedInstance(p)
     case None    => Dictionary.getDefaultResourceInstance
   }
-
-  val rnd = new Random
-
-  protected def rand(max: Int) = rnd.nextInt(max)
-
-  protected def randElem[T](s: Seq[T]): T = s(rand(s.length))
 
   protected def getIdxWordsForPattern(
       p: GeneratorPattern): List[(GeneratorToken, IndexWord)] =
@@ -156,21 +183,12 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
     val words  = syn.getWords.asScala
     val word   = randElem(words)
     val lemma  = word.getLemma
-    def split  = lemma.split(' ')
-
-    //println(word)
-
-    wm match {
-      case Full         => lemma
-      case FirstWord    => split.head
-      case LastWord     => split.last
-      case WithSep(sep) => split.mkString(sep)
-      case RandomWord   => randElem(split)
-    }
+    applyWM(lemma, wm)
   }
 
   def randomForPattern(pat: GeneratorPattern,
-                       synCount: Int): (List[IndexWord], List[String]) = {
+                       synCount: Int,
+                       needSenses: Boolean): (List[IndexWord], List[String]) = {
     val newTk = getIdxWordsForPattern(pat)
 
     val res = for (_ <- 1 to synCount) yield {
@@ -183,9 +201,66 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
 
 }
 
-case class NatPosFiles(index: File, data: File)
+trait NatFileHolder {
+  def rafRO(f: File) = new RandomAccessFile(f, "r")
+  def close(): Unit
+}
+
+case class NatPosFiles(index: File, data: File, offsets: File)
+    extends NatFileHolder {
+
+  val indexR = rafRO(index)
+  val dataR  = rafRO(data)
+
+  def close(): Unit = {
+    indexR.close()
+    dataR.close()
+  }
+
+  val indexOffsets: Array[Int] =
+    if (offsets.exists) {
+      val s     = Source.fromFile(offsets)
+      val lr    = s.getLines()
+      val count = lr.next().toInt
+      val o     = new ArrayBuffer[Int](count)
+      for ((l, i) <- lr.zipWithIndex) o(i) = l.toInt
+      s.close()
+      o.toArray
+    }
+    else {
+      val lf = '\n'.toInt
+      val o  = new ArrayBuffer[Int]
+      val s = new BufferedInputStream(
+        new FileInputStream(index)
+      )
+      var off = 0
+      var b   = s.read()
+      while (b >= 0) {
+        off += 1
+        if (b == lf) o += off
+        b = s.read()
+      }
+      s.close()
+      o.toArray
+    }
+
+  val indexOffsetsLength =
+    indexOffsets.length
+
+}
+
+case class NatIndex(pos: PS, lemma: String, sensesOff: List[Int])
+
+case class NatData(pos: PS, words: List[String], sense: String)
+
+object GeneratorNative {
+  val numPat = "[0-9]+".r.pattern
+  val isNum  = (s: String) => numPat.matcher(s).matches
+  val notNum = isNum.andThen(!_)
+}
 
 class GeneratorNative(dictPath: Option[String]) extends Generator {
+  import GeneratorNative._
   val generatorName = "native"
 
   val dictDir = dictPath match {
@@ -196,23 +271,88 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
   val res = (p: String) => new File(dictDir, p)
   val wn  = res.compose[String](p => s"wn3.1/$p")
   val posF = ((p: PS) => p.ext).andThen(e =>
-    NatPosFiles(wn(s"index.$e"), wn(s"data.$e")))
+    NatPosFiles(wn(s"index.$e"), wn(s"data.$e"), wn(s"indexOffsets.$e")))
 
-  val wnFiles =
+  val wnFiles: Map[PS, NatPosFiles] =
     List(Noun, Verb, Adj, Adverb)
       .map(p => p -> posF(p))
       .toMap
 
-  val indexOffsets = {
-    val s     = Source.fromFile(res("indexOffsets"))
-    val lr    = s.getLines()
-    val count = lr.next().toInt
-    val o     = new ArrayBuffer[Int](count)
-    for ((l, i) <- lr.zipWithIndex) o(i) = l.toInt
-    s.close()
-    o.toVector
+  def cleanup(): Unit = {
+    wnFiles.values.foreach(_.close())
   }
 
-  override def randomForPattern(pat: GeneratorPattern, synCount: Int) = ???
+  def line(pos: PS, off: Int, f: NatPosFiles => RandomAccessFile): String = {
+    val raf = f(wnFiles(pos))
+    raf.seek(off)
+    raf.readLine()
+  }
+
+  def indexLine(pos: PS, off: Int): NatIndex = {
+    // lemma  pos  synset_cnt  p_cnt  [ptr_symbol...]  sense_cnt  tagsense_cnt  synset_offset  [synset_offset...]
+    val rawLemma :: posLetter :: _ :: _ :: tailPSym =
+      line(pos, off, _.indexR).split(" ").toList
+
+    val _ :: _ :: rawSenses =
+      tailPSym.dropWhile(notNum)
+
+    val lemma  = rawLemma.replaceAll("_", " ")
+    val senses = rawSenses.map(_.toInt)
+    NatIndex(pos, lemma, senses)
+  }
+
+  def dataLine(pos: PS, off: Int): NatData = {
+    // synset_offset  lex_filenum  ss_type  w_cnt  word  lex_id  [word  lex_id...]  p_cnt  [ptr...]  [frames...] | gloss
+    val data :: gloss =
+      line(pos, off, _.dataR).split("|").toList
+
+    val dataOff :: _ :: _ :: _ :: tailWords =
+      data.split(" ").toList
+
+    val words = tailWords
+      .grouped(2)
+      .collect {
+        case word :: lex :: Nil if isNum(lex) => word
+      }
+      .toList
+
+    val sense =
+      gloss.headOption.map(_.trim).getOrElse("")
+
+    NatData(pos, words, sense)
+  }
+
+  def randomOffset(pos: PS): Int = {
+    val f = wnFiles(pos)
+    f.indexOffsets(rand(f.indexOffsetsLength))
+  }
+
+  override def randomForPattern(pat: GeneratorPattern,
+                                synCount: Int,
+                                needSenses: Boolean) = {
+    val (repTokens, senses) = pat.tokens
+      .map {
+        case GeneratorToken(pos, wm, _) =>
+          val o = randomOffset(pos)
+          val i = indexLine(pos, o)
+          val s =
+            if (needSenses)
+              i.sensesOff
+                .map(so => dataLine(pos, so))
+                .map(d => s"| ${d.words.mkString(", ")}: ${d.sense}")
+            else Nil
+          val word = applyWM(i.lemma, wm)
+          (word, s)
+      }
+      .foldRight(
+        (List.empty[String], List.empty[String])
+      ) {
+        case ((w, s), (ws, ss)) => (w :: ws, s ::: ss)
+      }
+
+    val singleSyn = pat.patStr(repTokens)
+    GeneratorResponse(singleSyn :: Nil, senses)
+    ???
+  }
 
 }

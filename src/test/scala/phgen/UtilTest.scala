@@ -45,7 +45,7 @@ class UtilTest extends FlatSpec with Matchers {
         println(pat)
         val parsed = patternParse(pat, bounds)
         val mapped = parsed.tokens.map(mapper)
-        val resp = makePatternStrList(parsed, mapped)
+        val resp = makePatternStrList(parsed.around, mapped)
         resp shouldBe ref
     }
 
