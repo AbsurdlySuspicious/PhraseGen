@@ -17,11 +17,15 @@
 
 package phgen
 
+import java.io.{File, FileInputStream}
+
 import net.sf.extjwnl.data.{IndexWord, POS}
 import net.sf.extjwnl.dictionary.Dictionary
 import phgen.Utils._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 import scala.util.Random
 import scala.util.matching.Regex
 
@@ -35,20 +39,20 @@ object PS {
   }
 }
 
-sealed class PS(val orig: POS)
+sealed class PS(val orig: POS, val ext: String)
 
-case object Noun extends PS(POS.NOUN)
-case object Verb extends PS(POS.VERB)
-case object Adverb extends PS(POS.ADVERB)
-case object Adj extends PS(POS.ADJECTIVE)
+case object Noun   extends PS(POS.NOUN, "noun")
+case object Verb   extends PS(POS.VERB, "verb")
+case object Adverb extends PS(POS.ADVERB, "adv")
+case object Adj    extends PS(POS.ADJECTIVE, "adj")
 
 sealed trait WordMode
 
 case class WithSep(sep: String) extends WordMode
-case object Full extends WordMode
-case object RandomWord extends WordMode
-case object FirstWord extends WordMode
-case object LastWord extends WordMode
+case object Full                extends WordMode
+case object RandomWord          extends WordMode
+case object FirstWord           extends WordMode
+case object LastWord            extends WordMode
 
 case class GeneratorToken(ps: PS, wm: WordMode, searchQuery: Option[String])
 case class GeneratorPattern(p: ParsedPattern, tokens: List[GeneratorToken]) {
@@ -62,11 +66,11 @@ trait Generator {
   val bounds = ("[", "]")
 
   val sepPref = "sep"
-  val sepRe = new Regex(sepPref + """\((.*)\)""")
+  val sepRe   = new Regex(sepPref + """\((.*)\)""")
 
-  val posRePOS = "pos"
+  val posRePOS   = "pos"
   val posReParam = "param"
-  val posRe = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
+  val posRe      = new Regex("""(.+)\((.*)\)""", posRePOS, posReParam)
 
   protected def ex(msg: String) = throw new GeneratorException(msg)
 
@@ -103,9 +107,9 @@ trait Generator {
           }
 
           val ps = posName match {
-            case "noun"              => Noun
-            case "verb"              => Verb
-            case "adverb"            => Adverb
+            case "n" | "noun"        => Noun
+            case "v" | "verb"        => Verb
+            case "adv" | "adverb"    => Adverb
             case "adj" | "adjective" => Adj
             case x                   => ex(s"invalid ps: $x")
           }
@@ -148,11 +152,11 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
 
   protected def synSelector(w: IndexWord, wm: WordMode): String = {
     val senses = w.getSenses.asScala
-    val syn = randElem(senses)
-    val words = syn.getWords.asScala
-    val word = randElem(words)
-    val lemma = word.getLemma
-    def split = lemma.split(' ')
+    val syn    = randElem(senses)
+    val words  = syn.getWords.asScala
+    val word   = randElem(words)
+    val lemma  = word.getLemma
+    def split  = lemma.split(' ')
 
     //println(word)
 
@@ -179,10 +183,35 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
 
 }
 
+case class NatPosFiles(index: File, data: File)
+
 class GeneratorNative(dictPath: Option[String]) extends Generator {
   val generatorName = "native"
 
-  //val dict = dictPath match {}
+  val dictDir = dictPath match {
+    case Some(p) => new File(p)
+    case None    => new File(getClass.getResource("/dict-native").getPath)
+  }
+
+  val res = (p: String) => new File(dictDir, p)
+  val wn  = res.compose[String](p => s"wn3.1/$p")
+  val posF = ((p: PS) => p.ext).andThen(e =>
+    NatPosFiles(wn(s"index.$e"), wn(s"data.$e")))
+
+  val wnFiles =
+    List(Noun, Verb, Adj, Adverb)
+      .map(p => p -> posF(p))
+      .toMap
+
+  val indexOffsets = {
+    val s     = Source.fromFile(res("indexOffsets"))
+    val lr    = s.getLines()
+    val count = lr.next().toInt
+    val o     = new ArrayBuffer[Int](count)
+    for ((l, i) <- lr.zipWithIndex) o(i) = l.toInt
+    s.close()
+    o.toVector
+  }
 
   override def randomForPattern(pat: GeneratorPattern, synCount: Int) = ???
 
