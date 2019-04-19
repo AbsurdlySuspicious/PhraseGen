@@ -41,26 +41,23 @@ case class Opts(
 )
 
 object PatMode {
-  val fromString: PartialFunction[String, PatMode] = {
-    case "round" | "round-robin" => PatRoundRobin
-    case "random"                => PatRandom
-  }
-
-  def validate(s: String): Boolean =
-    fromString.isDefinedAt(s)
+  val modeMap = Map(
+    "round"  -> PatRoundRobin,
+    "random" -> PatRandom
+  )
 }
 
 sealed trait PatMode
 case object PatRoundRobin extends PatMode
-case object PatRandom extends PatMode
+case object PatRandom     extends PatMode
 
 sealed trait GeneratorType
-case object GenJwnl extends GeneratorType
+case object GenJwnl   extends GeneratorType
 case object GenNative extends GeneratorType
 
 object GeneratorType {
   val gMap = Map(
-    "jwnl" -> GenJwnl,
+    "jwnl"   -> GenJwnl,
     "native" -> GenNative
   )
 
@@ -69,7 +66,7 @@ object GeneratorType {
 }
 
 object Phgen extends App {
-  val ts = time
+  val ts      = time
   val version = "1.0"
 
   val dop = Opts()
@@ -106,19 +103,13 @@ object Phgen extends App {
           o.copy(gen =
             GeneratorType.gMap.getOrElse(g, esc(s"Unknown generator: $g")))),
       opt[Int]('c', "count")
-        .text(s"Count of names to generate (default ${dop.count})")
+        .text(s"Amount of phrases to generate (default ${dop.count})")
         .action((c, o) => o.copy(count = c)),
-      opt[Int]('y', "syncount")
-        .text(
-          s"Count of random synonyms for each phrase (default ${dop.countSyn})")
-        .action((c, o) => o.copy(countSyn = c)),
       opt[String]('m', "pattern-mode")
-        .text("Pattern selection mode: round, random (default: random)")
-        .action((m, o) => o.copy(patMode = PatMode.fromString(m)))
-        .validate { m =>
-          if (PatMode.validate(m)) success
-          else failure("Invalid pattern mode")
-        },
+        .text("Pattern selection mode: round, random (default)")
+        .action((m, o) =>
+          o.copy(
+            patMode = PatMode.modeMap.getOrElse(m, esc(s"Unknown mode: $m")))),
       opt[Unit]('s', "show-senses")
         .text("Show WordNet (alternative) senses for each used word/synset")
         .action((_, o) => o.copy(senses = true)),
@@ -140,17 +131,16 @@ object Phgen extends App {
     case GenJwnl   => new GeneratorJwnl(opts.dict)
     case GenNative => new GeneratorNative(opts.dict)
   }
-  val gte = time
-  val synSep = "\n  "
+  val gte    = time
 
   val te = time
 
   val times =
     s"""
-       |Whole bootstrap:     ${te - ts}ms
        |Opt parser setup:    ${pste - psts}ms
        |Opt parser routine:  ${ppte - ppts}ms
        |Generator setup:     ${gte - gts}ms (${g.generatorName})
+       |Total bootstrap:     ${te - ts}ms
      """.stripMargin
 
   println(times)
@@ -159,12 +149,12 @@ object Phgen extends App {
     if (s.nonEmpty) println(s.mkString("\n"))
 
   def printSyn(w: List[String]): Unit =
-    println(w.mkString(synSep))
+    println(w.mkString(";"))
 
   def interactive(): Unit = {
-    var count = opts.count
+    var count    = opts.count
     var syncount = opts.countSyn
-    var senses = opts.senses
+    var senses   = opts.senses
 
     val rd = LineReaderBuilder.builder().build()
 
@@ -179,14 +169,12 @@ object Phgen extends App {
             |
             |Commands:
             |:exit, :q - exit interactive mode
-            |:count, :syncount - show or change corresponding counts
+            |:count - show or change amount of phrases per pattern
             |:senses - toggle showing senses
           """.stripMargin)
         case (":exit" | ":q") :: Nil => return
         case ":count" :: Nil         => println(count)
         case ":count" :: s :: Nil    => count = s.toInt
-        case ":syncount" :: Nil      => println(syncount)
-        case ":syncount" :: s :: Nil => syncount = s.toInt
         case ":senses" :: Nil =>
           senses = !senses
           println("show senses: " + senses)
@@ -212,7 +200,7 @@ object Phgen extends App {
   if (opts.interactive) interactive()
   else {
     val synCount = opts.countSyn
-    val senses = opts.senses
+    val senses   = opts.senses
 
     val op = opts.pat
       .map(_.trim)

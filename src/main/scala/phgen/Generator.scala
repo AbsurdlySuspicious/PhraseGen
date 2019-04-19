@@ -368,7 +368,7 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
         case ((w, s), (ws, ss)) => (w :: ws, s ::: ss)
       }
 
-    val singleSyn = pat.patStr(repTokens) // todo syns (or rm)
+    val singleSyn = pat.patStr(repTokens)
     GeneratorResponse(singleSyn :: Nil, senses)
   }
 
