@@ -154,7 +154,7 @@ trait Generator {
 
   def randomForPattern(pat: GeneratorPattern,
                        synCount: Int,
-                       needSenses: Boolean): (List[IndexWord], List[String])
+                       needSenses: Boolean): GeneratorResponse
 }
 
 class GeneratorJwnl(dictPath: Option[String]) extends Generator {
@@ -186,9 +186,12 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
     applyWM(lemma, wm)
   }
 
+  def getSenses(words: List[IndexWord]): List[String] =
+    words.flatMap(_.getSenses.asScala.map(_.toString))
+
   def randomForPattern(pat: GeneratorPattern,
                        synCount: Int,
-                       needSenses: Boolean): (List[IndexWord], List[String]) = {
+                       needSenses: Boolean): GeneratorResponse = {
     val newTk = getIdxWordsForPattern(pat)
 
     val res = for (_ <- 1 to synCount) yield {
@@ -196,7 +199,8 @@ class GeneratorJwnl(dictPath: Option[String]) extends Generator {
       pat.patStr(newRp)
     }
 
-    (newTk.map(_._2), res.toList)
+    val s = getSenses(newTk.map(_._2))
+    GeneratorResponse(res.toList, s)
   }
 
 }
@@ -329,10 +333,10 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
 
   override def randomForPattern(pat: GeneratorPattern,
                                 synCount: Int,
-                                needSenses: Boolean) = {
+                                needSenses: Boolean): GeneratorResponse = {
     val (repTokens, senses) = pat.tokens
       .map {
-        case GeneratorToken(pos, wm, _) =>
+        case GeneratorToken(pos, wm, _) => // todo search
           val o = randomOffset(pos)
           val i = indexLine(pos, o)
           val s =
@@ -350,9 +354,8 @@ class GeneratorNative(dictPath: Option[String]) extends Generator {
         case ((w, s), (ws, ss)) => (w :: ws, s ::: ss)
       }
 
-    val singleSyn = pat.patStr(repTokens)
+    val singleSyn = pat.patStr(repTokens) // todo syns
     GeneratorResponse(singleSyn :: Nil, senses)
-    ???
   }
 
 }

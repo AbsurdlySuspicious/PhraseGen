@@ -80,16 +80,6 @@ object Utils {
     b.toString
   }
 
-  def printSenses(words: List[IndexWord]): Unit = {
-    println("\n=== senses: ===")
-    for (w <- words) {
-      println(s"for word ${w.getLemma}:")
-      for (s <- w.getSenses.asScala) println(s)
-      println()
-    }
-    println("===============\n")
-  }
-
   class RandomIter[T](src: Seq[T]) extends Iterator[T] {
     val rnd = new Random
     val max = src.length

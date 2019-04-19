@@ -155,6 +155,12 @@ object Phgen extends App {
 
   println(times)
 
+  def printSenses(s: List[String]): Unit =
+    if (s.nonEmpty) println(s.mkString("\n"))
+
+  def printSyn(w: List[String]): Unit =
+    println(w.mkString(synSep))
+
   def interactive(): Unit = {
     var count = opts.count
     var syncount = opts.countSyn
@@ -191,9 +197,9 @@ object Phgen extends App {
           val pat = g.parsePattern(input)
           println()
           for (i <- 1 to count) {
-            val (words, rp) = g.randomForPattern(pat, syncount, senses)
-            if (senses) printSenses(words)
-            println(rp.mkString(synSep))
+            val res = g.randomForPattern(pat, syncount, senses)
+            printSenses(res.senses)
+            printSyn(res.syn)
           }
           println()
       }
@@ -226,9 +232,9 @@ object Phgen extends App {
     for (_ <- 0 until opts.count) {
       val p = pats.next()
 
-      val (words, rp) = g.randomForPattern(p, synCount, senses)
-      if (senses) printSenses(words)
-      println(rp.mkString(synSep))
+      val res = g.randomForPattern(p, synCount, senses)
+      printSenses(res.senses)
+      printSyn(res.syn)
     }
   }
 
