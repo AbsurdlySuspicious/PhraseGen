@@ -194,11 +194,11 @@ object Phgen {
         }
       } catch {
         case _: UserInterruptException => return
-        case x: Throwable              => println("error:\n" + x); throw x
+        case x: Throwable              => println("error:\n" + x)
       }
     }
 
-    if (opts.interactive) interactive()
+    try if (opts.interactive) interactive()
     else {
       val synCount = opts.countSyn
       val senses   = opts.senses
@@ -225,8 +225,8 @@ object Phgen {
         printSyn(res.syn)
         printSenses(res.senses)
       }
+    } finally {
+      g.cleanup()
     }
-
-    g.cleanup()
   }
 }
