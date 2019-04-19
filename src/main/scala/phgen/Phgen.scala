@@ -56,7 +56,7 @@ object GeneratorType {
 
 object Phgen extends App {
   val ts      = time
-  val version = "1.0"
+  val version = "2.0"
 
   val dop = Opts()
 
